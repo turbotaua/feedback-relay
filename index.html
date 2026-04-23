@@ -143,15 +143,17 @@
     if (!phone || !message) {
       content.innerHTML = '<div class="error">Некоректне посилання — немає номеру або тексту.</div>';
     } else {
-      const digits = phone.replace(/^\+/, '');
+      const phoneWithPlus = phone.startsWith('+') ? phone : '+' + phone.replace(/^\+/, '');
+      const digitsOnly = phoneWithPlus.replace(/^\+/, '');
       content.innerHTML = `
         <div class="info">
           <div class="label">📞 Номер</div>
-          <div class="value">${phone}</div>
+          <div class="value">${phoneWithPlus}</div>
         </div>
         <div class="msg">${escapeHtml(message)}</div>
         <button class="btn btn-viber" id="sendViber">📤 Скопіювати і відкрити Viber</button>
         <a class="btn btn-copy" id="copyOnly">📋 Тільки скопіювати текст</a>
+        <a class="btn btn-copy" id="openWa" href="https://wa.me/${digitsOnly}?text=${encodeURIComponent(message)}">💬 Відкрити у WhatsApp</a>
         <div class="status" id="status"></div>
       `;
 
@@ -176,8 +178,8 @@
 
       document.getElementById('sendViber').addEventListener('click', async () => {
         const ok = await copyToClipboard(message);
-        status.textContent = ok ? '✅ Текст скопійовано — відкриваю Viber...' : '⚠️ Не вдалось скопіювати автоматично — скопіюйте вручну';
-        setTimeout(() => { location.href = 'viber://chat?number=' + digits; }, 350);
+        status.textContent = ok ? '✅ Текст скопійовано — відкриваю Viber...' : '⚠️ Не вдалось скопіювати — скопіюйте вручну';
+        setTimeout(() => { location.href = 'viber://chat?number=' + encodeURIComponent(phoneWithPlus); }, 350);
       });
 
       document.getElementById('copyOnly').addEventListener('click', async (e) => {
