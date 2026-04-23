@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Турбота — надсилання</title>
+  <style>
+    :root {
+      --cream: #FAF3E7;
+      --brand: #D4A574;
+      --dark: #3E2E24;
+      --muted: #8B7355;
+      --border: #E5D4B8;
+      --viber: #7360F2;
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body {
+      margin: 0; padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+      background: var(--cream);
+      color: var(--dark);
+      min-height: 100vh;
+    }
+    .wrap {
+      max-width: 560px;
+      margin: 0 auto;
+      padding: 24px 20px 40px;
+    }
+    .logo {
+      font-size: 32px;
+      text-align: center;
+      margin: 8px 0 4px;
+    }
+    h1 {
+      text-align: center;
+      font-size: 17px;
+      color: var(--muted);
+      margin: 0 0 24px;
+      font-weight: 500;
+    }
+    .info {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin-bottom: 14px;
+      font-size: 15px;
+    }
+    .info .label {
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 4px;
+    }
+    .info .value {
+      font-weight: 600;
+      font-size: 16px;
+      word-break: break-all;
+    }
+    .msg {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 20px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-size: 15px;
+      line-height: 1.5;
+      max-height: 240px;
+      overflow-y: auto;
+    }
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 18px;
+      font-size: 18px;
+      font-weight: 700;
+      border: none;
+      border-radius: 14px;
+      cursor: pointer;
+      margin-bottom: 10px;
+      text-align: center;
+      text-decoration: none;
+      color: white;
+      -webkit-appearance: none;
+    }
+    .btn-viber { background: var(--viber); }
+    .btn-viber:active { background: #5a49d6; }
+    .btn-copy { background: var(--brand); }
+    .btn-copy:active { background: #b98a5c; }
+    .status {
+      text-align: center;
+      color: #10a850;
+      margin: 10px 0 0;
+      font-weight: 600;
+      font-size: 15px;
+      min-height: 22px;
+    }
+    .error {
+      background: #fff4e5;
+      border: 1px solid #ffb84d;
+      color: #7a3d00;
+      padding: 14px;
+      border-radius: 14px;
+      margin-bottom: 14px;
+    }
+    .hint {
+      color: var(--muted);
+      font-size: 13px;
+      text-align: center;
+      margin-top: 24px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="logo">🪷</div>
+    <h1>Турбота · надсилання повідомлення</h1>
+
+    <div id="content"></div>
+
+    <div class="hint">
+      Після натискання: текст копіюється, Viber відкривається.<br>
+      У Viber: довгий тап у полі вводу → <b>Paste</b> → <b>Send</b>.
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    const phone = (params.get('p') || '').replace(/[^\d+]/g, '');
+    const b64 = params.get('m') || '';
+    const content = document.getElementById('content');
+
+    let message = '';
+    try {
+      message = decodeURIComponent(escape(atob(b64.replace(/-/g, '+').replace(/_/g, '/'))));
+    } catch (e) {
+      content.innerHTML = '<div class="error">Некоректне посилання — відсутній або пошкоджений текст.</div>';
+      throw e;
+    }
+
+    if (!phone || !message) {
+      content.innerHTML = '<div class="error">Некоректне посилання — немає номеру або тексту.</div>';
+    } else {
+      const digits = phone.replace(/^\+/, '');
+      content.innerHTML = `
+        <div class="info">
+          <div class="label">📞 Номер</div>
+          <div class="value">${phone}</div>
+        </div>
+        <div class="msg">${escapeHtml(message)}</div>
+        <button class="btn btn-viber" id="sendViber">📤 Скопіювати і відкрити Viber</button>
+        <a class="btn btn-copy" id="copyOnly">📋 Тільки скопіювати текст</a>
+        <div class="status" id="status"></div>
+      `;
+
+      const status = document.getElementById('status');
+
+      async function copyToClipboard(text) {
+        try {
+          await navigator.clipboard.writeText(text);
+          return true;
+        } catch (e) {
+          const ta = document.createElement('textarea');
+          ta.value = text;
+          ta.style.position = 'fixed';
+          ta.style.left = '-9999px';
+          document.body.appendChild(ta);
+          ta.select();
+          const ok = document.execCommand('copy');
+          document.body.removeChild(ta);
+          return ok;
+        }
+      }
+
+      document.getElementById('sendViber').addEventListener('click', async () => {
+        const ok = await copyToClipboard(message);
+        status.textContent = ok ? '✅ Текст скопійовано — відкриваю Viber...' : '⚠️ Не вдалось скопіювати автоматично — скопіюйте вручну';
+        setTimeout(() => { location.href = 'viber://chat?number=' + digits; }, 350);
+      });
+
+      document.getElementById('copyOnly').addEventListener('click', async (e) => {
+        e.preventDefault();
+        const ok = await copyToClipboard(message);
+        status.textContent = ok ? '✅ Скопійовано в буфер' : '⚠️ Не вдалось скопіювати';
+      });
+    }
+
+    function escapeHtml(s) {
+      return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+  </script>
+</body>
+</html>
