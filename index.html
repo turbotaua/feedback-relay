@@ -82,7 +82,8 @@
       margin-bottom: 16px;
     }
 
-    .actions { display: flex; flex-direction: column; gap: 10px; margin-bottom: 8px; }
+    .actions { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+    .actions.primary { margin-bottom: 8px; }
     .btn {
       display: flex; align-items: center; justify-content: center;
       width: 100%; padding: 16px;
@@ -93,6 +94,43 @@
       color: white;
       -webkit-appearance: none;
       font-family: inherit;
+    }
+    /* Collapsible message preview */
+    details.preview {
+      background: var(--cream-deep);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 0;
+      margin-top: 16px;
+      margin-bottom: 12px;
+    }
+    details.preview > summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 14px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    details.preview > summary::-webkit-details-marker { display: none; }
+    details.preview > summary::after {
+      content: '▼';
+      font-size: 11px;
+      color: var(--muted);
+      transition: transform 0.2s;
+    }
+    details.preview[open] > summary::after { transform: rotate(180deg); }
+    details.preview .body {
+      padding: 0 16px 14px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-size: 15px;
+      line-height: 1.55;
     }
     .btn-viber { background: var(--viber); }
     .btn-viber:active { background: var(--viber-dark); }
@@ -209,6 +247,13 @@
         </div>
       </div>` : '';
 
+    const actions = `
+      <div class="actions primary">
+        <button class="btn btn-viber" id="sendViber">📤 Скопіювати + відкрити Viber</button>
+        <button class="btn btn-copy" id="copyOnly">📋 Тільки скопіювати</button>
+      </div>
+      <div class="status" id="status"></div>`;
+
     const itemsCard = (d.items && d.items.length) ? `
       <div class="card">
         <h2>У замовленні</h2>
@@ -217,21 +262,14 @@
         </ul>
       </div>` : '';
 
-    const msgCard = `
-      <div class="card" style="background: var(--cream-deep)">
-        <h2>Текст повідомлення</h2>
-        <div class="msg" style="background: white; border: none; padding: 10px 0 0; margin: 0">${escapeHtml(msg)}</div>
-      </div>`;
+    const msgPreview = `
+      <details class="preview">
+        <summary>Текст повідомлення (перевірити)</summary>
+        <div class="body">${escapeHtml(msg)}</div>
+      </details>`;
 
-    const actions = `
-      <div class="actions">
-        <button class="btn btn-viber" id="sendViber">📤 Скопіювати + відкрити Viber</button>
-        <a class="btn btn-wa" id="openWa" href="https://wa.me/${digits}?text=${encodeURIComponent(msg)}" target="_blank">📱 WhatsApp (готовий текст)</a>
-        <button class="btn btn-copy" id="copyOnly">📋 Тільки скопіювати</button>
-      </div>
-      <div class="status" id="status"></div>`;
-
-    root.innerHTML = clientCard + whyBlock + itemsCard + msgCard + actions;
+    // Primary order: client → context → ACTIONS → preview → items
+    root.innerHTML = clientCard + whyBlock + actions + msgPreview + itemsCard;
 
     const status = document.getElementById('status');
 
